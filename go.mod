@@ -1,4 +1,4 @@
-module chameleon
+module github.com/ruidosujeira/chameleon
 
 go 1.22
 

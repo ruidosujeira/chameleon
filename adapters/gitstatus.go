@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"chameleon/style"
-	"chameleon/theme"
+	"github.com/ruidosujeira/chameleon/style"
+	"github.com/ruidosujeira/chameleon/theme"
 )
 
 // GitStatus re-renders `git status`. It deliberately targets only the

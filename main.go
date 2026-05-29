@@ -4,14 +4,22 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"os/exec"
 
-	"chameleon/adapters"
-	"chameleon/style"
-	"chameleon/theme"
+	"github.com/ruidosujeira/chameleon/adapters"
+	"github.com/ruidosujeira/chameleon/style"
+	"github.com/ruidosujeira/chameleon/theme"
 )
+
+// embeddedThemes carries the built-in themes compiled into the binary, so
+// `chameleon` works from ANY directory without a themes/ folder alongside it.
+// This package (main) is what sees ./themes at build time.
+//
+//go:embed themes/*.toml
+var embeddedThemes embed.FS
 
 // Adapter is the contract every per-tool renderer implements.
 type Adapter interface {
@@ -30,7 +38,7 @@ var registry = []Adapter{
 func main() {
 	argv := os.Args[1:]
 
-	t, err := theme.Load(theme.Name())
+	t, err := theme.Load(theme.Name(), embeddedThemes)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chameleon:", err)
 		os.Exit(1)

@@ -61,13 +61,20 @@ a staged delete, a modified file, an untracked file, and 2 commits ahead of
 Requires **Go 1.22+**. No runtime dependencies beyond the TOML parser.
 
 ```sh
-git clone <repo> chameleon && cd chameleon
+go install github.com/ruidosujeira/chameleon@latest
+```
+
+Or build from a clone:
+
+```sh
+git clone https://github.com/ruidosujeira/chameleon && cd chameleon
 go build -o chameleon .
 ```
 
-> **Note:** today the theme is resolved at `themes/<name>.toml` **relative to
-> the current directory**. For global use, run from the project root or keep a
-> `themes/` folder alongside. Packaging (`embed`/`~/.config`) is on the roadmap.
+The default theme is **embedded in the binary**, so `chameleon` works from any
+directory out of the box — no `themes/` folder required. To override it, drop a
+`.chameleon.toml` in your project (or a theme under `~/.config/chameleon/themes/`);
+see [Themes](#themes-) for the full resolution order.
 
 ---
 
@@ -130,9 +137,23 @@ indent = "  "
 label_width = 10
 ```
 
-Create `themes/dracula.toml`, swap the colors, and use it with
+Create a theme, swap the colors, and use it with
 `CHAMELEON_THEME=dracula chameleon git status`. **Every** adapter follows along
 — that's the whole point.
+
+### Where themes come from
+
+Chameleon resolves the theme in this order — the **first** source that exists wins:
+
+1. **`.chameleon.toml`** in the CWD or any parent up to the git root — your
+   team's versionable theme; a full theme file that overrides everything.
+2. **`~/.config/chameleon/themes/<name>.toml`** (respects `XDG_CONFIG_HOME`) —
+   your personal theme.
+3. **`./themes/<name>.toml`** relative to the CWD — dev convenience inside the repo.
+4. **Embedded built-in** — compiled into the binary; the guaranteed fallback so
+   it always works, from anywhere.
+
+The theme name (steps 2–4) comes from `CHAMELEON_THEME`, defaulting to `tokyonight`.
 
 ---
 
@@ -191,7 +212,7 @@ vhs demo/demo.tape          # → demo/demo.gif
 
 Out of scope for now, in rough order of interest:
 
-- [ ] Package themes (`embed.FS` / `~/.config/chameleon`)
+- [x] Embedded built-in theme + `.chameleon.toml` / `~/.config` override layers
 - [ ] More adapters: `npm`, `docker`, `kubectl`, … (all on the single theme)
 - [ ] `grc`-style regex fallback for commands without an adapter
 - [ ] Truecolor → 256/16 color downsampling
