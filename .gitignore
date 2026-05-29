@@ -1,0 +1,5 @@
+# compiled binary (build with `go build -o chameleon .`)
+/chameleon
+/chameleon-*
+
+# the demo GIF is committed on purpose (README embeds it) — do not ignore it

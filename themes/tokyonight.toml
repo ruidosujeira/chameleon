@@ -1,0 +1,39 @@
+name = "tokyonight"
+
+[colors]
+prompt = "#9ece6a"
+command = "#c0caf5"
+branch = "#bb9af7"
+ahead = "#e0af68"
+behind = "#f7768e"
+staged = "#9ece6a"
+modified = "#e0af68"
+untracked = "#565f89"
+path = "#7aa2f7"
+dim = "#565f89"
+# per-state colors (the adapter colors each entry by its own state)
+added = "#9ece6a"
+deleted = "#f7768e"
+renamed = "#7dcfff"
+copied = "#7dcfff"
+typechange = "#e0af68"
+
+[glyphs]
+prompt = "❯"
+branch = "⎇"
+ahead = "↑"
+behind = "↓"
+staged = "✓"
+modified = "●"
+added = "✚"
+deleted = "✗"
+renamed = "»"
+copied = "⊕"
+typechange = "~"
+changed = "•"
+untracked = "?"
+clean = "✓"
+
+[layout]
+indent = "  "
+label_width = 10
