@@ -17,6 +17,11 @@ deleted = "#f7768e"
 renamed = "#7dcfff"
 copied = "#7dcfff"
 typechange = "#e0af68"
+# npm outdated: severity ramp (major most urgent → patch least)
+major = "#f7768e"
+minor = "#e0af68"
+patch = "#7dcfff"
+update = "#bb9af7"
 
 [glyphs]
 prompt = "❯"
@@ -33,6 +38,11 @@ typechange = "~"
 changed = "•"
 untracked = "?"
 clean = "✓"
+# npm outdated severity glyphs
+major = "▲"
+minor = "▴"
+patch = "▵"
+update = "↑"
 
 [layout]
 indent = "  "

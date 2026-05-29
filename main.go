@@ -33,6 +33,7 @@ type Adapter interface {
 // true wins.
 var registry = []Adapter{
 	adapters.GitStatus{},
+	adapters.NpmOutdated{},
 }
 
 func main() {

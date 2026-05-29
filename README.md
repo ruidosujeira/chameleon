@@ -7,7 +7,7 @@
 It captures the machine-readable output of your tools and **re-renders it from
 scratch** — with a single theme shared across all of them.
 
-![Chameleon re-rendering `git status`](demo/demo.gif)
+![git status and npm outdated, re-rendered from one theme](demo/family.gif)
 
 </div>
 
@@ -38,21 +38,46 @@ deliver, because each carries its own theme.
 
 ---
 
-## Demo
+## One theme, two tools
 
-The GIF above was recorded with [VHS](https://github.com/charmbracelet/vhs)
-from [`demo/demo.tape`](demo/demo.tape), against a repository with a staged add,
-a staged delete, a modified file, an untracked file, and 2 commits ahead of
-`origin`:
+This is the whole pitch in one screen — two unrelated tools, captured from their
+machine output and redrawn from the **same** theme. Same prompt glyph, same
+glyph-and-color-per-state model, same aligned columns. They read as siblings:
+
+<table>
+<tr>
+<th align="left"><code>chameleon git status</code></th>
+<th align="left"><code>chameleon npm outdated</code></th>
+</tr>
+<tr valign="top">
+<td>
 
 ```
 ❯ git status
-  ⎇ main ↑2 origin/main
+  ⎇ main
   ✗ deleted    old.txt
   ✚ added      parser.go
   ● modified   app.go
   ? untracked  debug.tmp
 ```
+
+</td>
+<td>
+
+```
+❯ npm outdated
+  ▲ major   chalk      4.0.0 → 4.1.2  (latest 5.6.2)
+  ▲ major   is-number  6.0.0 → 6.0.0  (latest 7.0.0)
+  ▴ minor   semver     7.3.0 → 7.8.1  (latest 7.8.1)
+```
+
+</td>
+</tr>
+</table>
+
+The GIF above was recorded with [VHS](https://github.com/charmbracelet/vhs)
+from [`demo/family.tape`](demo/family.tape). `npm outdated` is colored by upgrade
+severity (major / minor / patch), read straight from the shared theme.
 
 ---
 
@@ -166,7 +191,7 @@ Four pieces, deliberately small:
 ├── style/      our OWN styling layer — zero Charm, zero framework
 │               Color · Renderer (TTY/NO_COLOR) · Width · PadRight
 ├── theme/      loads themes/<name>.toml and resolves hex → Color
-├── adapters/   one renderer per tool (today: git status)
+├── adapters/   one renderer per tool — git status, npm outdated
 └── main.go     dispatcher: first adapter whose Handles() matches wins;
                 otherwise, run the command raw
 ```
@@ -184,6 +209,13 @@ func PadRight(s string, width int) string                // alignment
 > ⚠️ **Critical invariant:** always `PadRight` **before** `Paint`. Painting
 > first injects escape codes that `Width` would then count as visible columns,
 > breaking alignment.
+
+### Adapters today
+
+| Command | Captures | States (glyph · color from theme) |
+|---|---|---|
+| `git status` | `git status --porcelain=v2 --branch` | added · deleted · modified · renamed · copied · typechange · untracked |
+| `npm outdated` | `npm outdated --json` | major · minor · patch · update (by upgrade severity) |
 
 To add a tool, implement the contract and register it:
 
@@ -203,7 +235,7 @@ dependency; the Chameleon binary imports no Charm package.
 
 ```sh
 go build -o chameleon .
-vhs demo/demo.tape          # → demo/demo.gif
+vhs demo/family.tape        # → demo/family.gif
 ```
 
 ---
@@ -213,7 +245,7 @@ vhs demo/demo.tape          # → demo/demo.gif
 Out of scope for now, in rough order of interest:
 
 - [x] Embedded built-in theme + `.chameleon.toml` / `~/.config` override layers
-- [ ] More adapters: `npm`, `docker`, `kubectl`, … (all on the single theme)
+- [ ] More adapters: `docker`, `kubectl`, `cargo`, … (all on the single theme)
 - [ ] `grc`-style regex fallback for commands without an adapter
 - [ ] Truecolor → 256/16 color downsampling
 - [ ] CJK/emoji width via `go-runewidth` (swap point already marked in `style.Width`)
