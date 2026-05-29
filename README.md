@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🦎 Chameleon
+<img width="942" height="293" alt="image" src="https://github.com/user-attachments/assets/11e3b5bb-71cc-4438-b765-21cd68816bbc" />
 
 **A *semantic* reformatter for terminal output.**
 
