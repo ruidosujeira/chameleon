@@ -2,6 +2,8 @@
 
 <img width="942" height="293" alt="image" src="https://github.com/user-attachments/assets/11e3b5bb-71cc-4438-b765-21cd68816bbc" />
 
+[![CI](https://github.com/ruidosujeira/chameleon/actions/workflows/ci.yml/badge.svg)](https://github.com/ruidosujeira/chameleon/actions/workflows/ci.yml)
+
 **A *semantic* reformatter for terminal output.**
 
 It captures the machine-readable output of your tools and **re-renders it from
@@ -66,9 +68,9 @@ glyph-and-color-per-state model, same aligned columns. They read as siblings:
 
 ```
 ❯ npm outdated
-  ▲ major   chalk      4.0.0 → 4.1.2  (latest 5.6.2)
-  ▲ major   is-number  6.0.0 → 6.0.0  (latest 7.0.0)
-  ▴ minor   semver     7.3.0 → 7.8.1  (latest 7.8.1)
+  ▲ major      chalk   4.0.0  → 4.1.2   (latest 5.6.2)
+  ◆ minor      semver  7.3.0  → 7.8.1   (latest 7.8.1)
+  ▪ patch      lodash  4.18.0 → 4.18.1  (latest 4.18.1)
 ```
 
 </td>
@@ -225,6 +227,10 @@ type Adapter interface {
     Render(argv []string, t *theme.Theme, r *style.Renderer) (string, error)
 }
 ```
+
+Want to teach Chameleon a new tool? [**CONTRIBUTING.md**](CONTRIBUTING.md) walks
+through adding an adapter end to end, with the two existing adapters as worked
+references.
 
 ---
 

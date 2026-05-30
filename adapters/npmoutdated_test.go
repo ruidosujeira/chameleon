@@ -87,8 +87,9 @@ func TestRenderOutdated(t *testing.T) {
 		},
 		{
 			// Covers major, minor, patch, and a missing-current package, plus
-			// severity ordering (major → minor → patch → update) and column
-			// alignment across rows of varying widths.
+			// severity ordering (major → minor → patch → update), column
+			// alignment across rows of varying widths, and the no-op arrow
+			// suppression (lodash: current == wanted, so "→ 3.10.1" is dropped).
 			name: "mixed severities and missing current",
 			json: `{
 				"left-pad":   {"current":"1.0.0","wanted":"1.0.1","latest":"2.3.0","type":"dependencies"},
@@ -98,7 +99,7 @@ func TestRenderOutdated(t *testing.T) {
 			}`,
 			want: "❯ npm outdated\n" +
 				"  ▲ major      left-pad    1.0.0  → 1.0.1   (latest 2.3.0)\n" +
-				"  ◆ minor      lodash      3.10.1 → 3.10.1  (latest 3.99.0)\n" +
+				"  ◆ minor      lodash      3.10.1           (latest 3.99.0)\n" +
 				"  ▪ patch      chalk       4.1.0  → 4.1.2   (latest 4.1.2)\n" +
 				"  ↑ update     typescript  —      → 5.0.0   (latest 5.4.0)\n",
 		},
@@ -120,7 +121,7 @@ func TestRenderOutdated(t *testing.T) {
 				"ignored": null
 			}`,
 			want: "❯ npm outdated\n" +
-				"  ▲ major      chalk  4.0.0 → 4.0.0  (latest 5.6.2)\n",
+				"  ▲ major      chalk  4.0.0          (latest 5.6.2)\n",
 		},
 	}
 

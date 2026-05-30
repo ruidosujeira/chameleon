@@ -165,7 +165,6 @@ func renderOutdated(data []byte, t *theme.Theme, r *style.Renderer) (string, err
 		c := npmStateColor(t, p.state)
 		label := style.PadRight(p.state, t.Layout.LabelWidth)
 		cur := style.PadRight(displayCurrent(p.current), curW)
-		want := style.PadRight(p.wanted, wantW)
 
 		sb.WriteString(t.Layout.Indent)
 		sb.WriteString(r.Paint(c, npmGlyph(t, p.state)+" "+label)) // glyph+label in state color
@@ -173,10 +172,17 @@ func renderOutdated(data []byte, t *theme.Theme, r *style.Renderer) (string, err
 		sb.WriteString(r.Paint(t.Colors["path"], style.PadRight(p.name, nameW)))
 		sb.WriteString("  ")
 		sb.WriteString(r.Paint(t.Colors["dim"], cur))
-		sb.WriteString(" ")
-		sb.WriteString(r.Paint(t.Colors["dim"], "→"))
-		sb.WriteString(" ")
-		sb.WriteString(r.Paint(c, want)) // the target version pops in the severity color
+		if p.current == p.wanted {
+			// current already satisfies the range: the install target equals
+			// what's installed, so "X → X" is a no-op that reads like a bug.
+			// Blank the arrow+target and keep the (latest …) column aligned.
+			sb.WriteString(strings.Repeat(" ", wantW+3)) // width of " → " + padded want
+		} else {
+			sb.WriteString(" ")
+			sb.WriteString(r.Paint(t.Colors["dim"], "→"))
+			sb.WriteString(" ")
+			sb.WriteString(r.Paint(c, style.PadRight(p.wanted, wantW))) // target pops in severity color
+		}
 		sb.WriteString("  ")
 		sb.WriteString(r.Paint(t.Colors["dim"], "(latest "+p.latest+")"))
 		sb.WriteString("\n")
