@@ -28,7 +28,7 @@ Type "git init -q -b main && git config user.email demo@chameleon && git config 
 Type "echo 'node_modules/' > .gitignore && echo 'package.json' >> .gitignore && echo 'package-lock.json' >> .gitignore" Enter
 Type "echo 'package main' > app.go && echo legacy > old.txt && git add app.go old.txt .gitignore && git commit -qm init" Enter
 Type "echo new > parser.go && git add parser.go && git rm -q old.txt && echo more >> app.go && echo scratch > debug.tmp" Enter
-Type "npm init -y >/dev/null 2>&1 && npm install --silent --no-audit --no-fund chalk@4.0.0 semver@7.3.0 is-number@6.0.0 >/dev/null 2>&1 && echo SETUP_DONE" Enter
+Type "npm init -y >/dev/null 2>&1 && npm install --silent --no-audit --no-fund chalk@4.0.0 semver@7.3.0 lodash@4.18.0 >/dev/null 2>&1 && echo SETUP_DONE" Enter
 Sleep 45s
 Type "clear" Enter
 Show

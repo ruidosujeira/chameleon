@@ -14,7 +14,7 @@ func npmTestTheme() *theme.Theme {
 		Colors: map[string]style.Color{},
 		Glyphs: map[string]string{
 			"prompt": "❯", "clean": "✓",
-			"major": "▲", "minor": "▴", "patch": "▵", "update": "↑",
+			"major": "▲", "minor": "◆", "patch": "▪", "update": "↑",
 		},
 	}
 	t.Layout.Indent = "  "
@@ -98,8 +98,8 @@ func TestRenderOutdated(t *testing.T) {
 			}`,
 			want: "❯ npm outdated\n" +
 				"  ▲ major      left-pad    1.0.0  → 1.0.1   (latest 2.3.0)\n" +
-				"  ▴ minor      lodash      3.10.1 → 3.10.1  (latest 3.99.0)\n" +
-				"  ▵ patch      chalk       4.1.0  → 4.1.2   (latest 4.1.2)\n" +
+				"  ◆ minor      lodash      3.10.1 → 3.10.1  (latest 3.99.0)\n" +
+				"  ▪ patch      chalk       4.1.0  → 4.1.2   (latest 4.1.2)\n" +
 				"  ↑ update     typescript  —      → 5.0.0   (latest 5.4.0)\n",
 		},
 		{

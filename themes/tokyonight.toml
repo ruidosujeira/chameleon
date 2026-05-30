@@ -38,10 +38,12 @@ typechange = "~"
 changed = "•"
 untracked = "?"
 clean = "✓"
-# npm outdated severity glyphs
+# npm outdated severity glyphs — distinct shapes per level so each reads at a
+# glance (▲ triangle / ◆ diamond / ▪ square), not size/fill variations that
+# blur together in most terminal fonts.
 major = "▲"
-minor = "▴"
-patch = "▵"
+minor = "◆"
+patch = "▪"
 update = "↑"
 
 [layout]
