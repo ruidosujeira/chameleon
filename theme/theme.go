@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -18,19 +19,35 @@ import (
 // already been resolved to style.Color values at load time.
 type Theme struct {
 	Name   string
+	Source string // where the theme was loaded from (a path, or "embedded:…")
 	Colors map[string]style.Color
 	Glyphs map[string]string
+	Styles map[string]style.Style // text attributes per key (bold/dim/italic/underline)
 	Layout struct {
 		Indent     string
 		LabelWidth int
 	}
 }
 
-// rawTheme mirrors the on-disk TOML shape, where colors are still hex strings.
+// Style returns the named key's full styling: its color (if the theme defines
+// one) plus any text attributes from the [styles] table. Adapters paint a
+// structural element with r.PaintStyle(t.Style("branch"), …) so a theme can,
+// say, make the branch bold without any adapter change.
+func (t *Theme) Style(key string) style.Style {
+	s := t.Styles[key] // attribute flags (zero Style when the theme omits the key)
+	if c, ok := t.Colors[key]; ok {
+		s.FG, s.HasFG = c, true
+	}
+	return s
+}
+
+// rawTheme mirrors the on-disk TOML shape, where colors are still hex strings
+// and styles are attribute words ("bold", "dim italic", …).
 type rawTheme struct {
 	Name   string            `toml:"name"`
 	Colors map[string]string `toml:"colors"`
 	Glyphs map[string]string `toml:"glyphs"`
+	Styles map[string]string `toml:"styles"`
 	Layout struct {
 		Indent     string `toml:"indent"`
 		LabelWidth int    `toml:"label_width"`
@@ -64,16 +81,41 @@ func Load(name string, embedded fs.FS) (*Theme, error) {
 
 	t := &Theme{
 		Name:   raw.Name,
+		Source: source,
 		Colors: make(map[string]style.Color, len(raw.Colors)),
 		Glyphs: raw.Glyphs,
+		Styles: make(map[string]style.Style, len(raw.Styles)),
 	}
 	for k, hex := range raw.Colors {
 		t.Colors[k] = style.Hex(hex)
+	}
+	for k, attrs := range raw.Styles {
+		t.Styles[k] = parseAttrs(attrs)
 	}
 	t.Layout.Indent = raw.Layout.Indent
 	t.Layout.LabelWidth = raw.Layout.LabelWidth
 
 	return t, nil
+}
+
+// parseAttrs turns a space/comma-separated attribute string ("bold",
+// "dim italic", "bold,underline") into a style.Style with only the attribute
+// flags set. Unknown words are ignored, so themes stay forgiving at the edges.
+func parseAttrs(s string) style.Style {
+	var out style.Style
+	for _, f := range strings.FieldsFunc(s, func(r rune) bool { return r == ' ' || r == ',' || r == '\t' }) {
+		switch strings.ToLower(f) {
+		case "bold":
+			out.Bold = true
+		case "dim", "faint":
+			out.Dim = true
+		case "italic":
+			out.Italic = true
+		case "underline":
+			out.Underline = true
+		}
+	}
+	return out
 }
 
 // resolve returns the raw bytes of the winning theme source, following the

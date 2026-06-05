@@ -33,16 +33,39 @@ type Adapter interface {
 // true wins.
 var registry = []Adapter{
 	adapters.GitStatus{},
+	// The package-manager family — all drawn from one shared severity ramp.
 	adapters.NpmOutdated{},
+	adapters.PipOutdated{},
+	adapters.CargoOutdated{},
+	adapters.BrewOutdated{},
+	adapters.GoOutdated{},
+	adapters.GemOutdated{},
+	// The state-list family — pods, containers, CI runs, services.
+	adapters.KubectlPods{},
+	adapters.DockerPS{},
+	adapters.GhRun{},
+	adapters.SystemctlUnits{},
 }
 
 func main() {
 	argv := os.Args[1:]
 
+	// Chameleon's own subcommands (themes/init/doctor/version/help) take the
+	// first word before any adapter or passthrough sees it.
+	if len(argv) > 0 && runSubcommand(argv) {
+		return
+	}
+
 	t, err := theme.Load(theme.Name(), embeddedThemes)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chameleon:", err)
 		os.Exit(1)
+	}
+	// CHAMELEON_DEBUG surfaces which theme won the resolution order (otherwise
+	// invisible) — handy when a project's .chameleon.toml or a user theme isn't
+	// taking effect.
+	if os.Getenv("CHAMELEON_DEBUG") != "" {
+		fmt.Fprintf(os.Stderr, "chameleon: theme %q from %s\n", t.Name, t.Source)
 	}
 	r := style.New()
 

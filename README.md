@@ -9,7 +9,7 @@
 It captures the machine-readable output of your tools and **re-renders it from
 scratch** — with a single theme shared across all of them.
 
-![git status and npm outdated, re-rendered from one theme](demo/family.gif)
+![four tools drawn from one theme, then re-themed live with a single env var](demo/showcase.gif)
 
 </div>
 
@@ -77,9 +77,13 @@ glyph-and-color-per-state model, same aligned columns. They read as siblings:
 </tr>
 </table>
 
-The GIF above was recorded with [VHS](https://github.com/charmbracelet/vhs)
-from [`demo/family.tape`](demo/family.tape). `npm outdated` is colored by upgrade
-severity (major / minor / patch), read straight from the shared theme.
+The GIF at the top is the whole pitch in motion — `git`, `npm`, `docker` and
+`kubectl` rendered side by side from one theme, then **re-themed live** by
+setting a single environment variable. It was recorded with
+[VHS](https://github.com/charmbracelet/vhs) from
+[`demo/showcase.tape`](demo/showcase.tape); `npm outdated` is colored by upgrade
+severity (major / minor / patch) and the state lists float their failures to the
+top, all straight from the shared theme.
 
 ---
 
@@ -120,12 +124,35 @@ interfering (a placeholder for the future `grc`-style regex fallback):
 chameleon echo "passes straight through"   # → passes straight through
 ```
 
+### Shell integration
+
+Wrapping your tools is safe — any unsupported subcommand (e.g. `git log`) falls
+straight through to the real tool. `init` prints the aliases:
+
+```sh
+eval "$(chameleon init zsh)"     # zsh / bash
+chameleon init fish | source     # fish
+```
+
+Now `git status`, `npm outdated`, `docker ps`, … are themed automatically, and
+everything else is untouched.
+
+### Built-in subcommands
+
+```sh
+chameleon themes            # list the built-in themes
+chameleon themes dracula    # preview a theme as a color swatch (+ validation)
+chameleon doctor            # which tools are installed, theme, color support
+chameleon version
+```
+
 ### Environment variables
 
 | Variable | Effect |
 |---|---|
 | `CHAMELEON_THEME` | Name of the theme to load (default: `tokyonight`). |
 | `CHAMELEON_FORCE_COLOR=1` | Force color even without a TTY (useful in pipes/CI). |
+| `CHAMELEON_DEBUG=1` | Print which theme won the resolution order (and from where) to stderr. |
 | `NO_COLOR` | Disable all color ([no-color.org](https://no-color.org)). |
 
 With none of these set, Chameleon enables color **only when `stdout` is a
@@ -168,6 +195,31 @@ Create a theme, swap the colors, and use it with
 `CHAMELEON_THEME=dracula chameleon git status`. **Every** adapter follows along
 — that's the whole point.
 
+### Built-in themes
+
+Six ship embedded in the binary — `chameleon themes` lists them, `chameleon
+themes <name>` previews one as a color swatch:
+
+`tokyonight` (default) · `dracula` · `catppuccin` · `gruvbox` · `nord` · `solarized`
+
+### Text attributes
+
+Beyond color, an optional `[styles]` table gives any key bold/dim/italic/underline:
+
+```toml
+[styles]
+branch  = "bold"
+path    = "dim"
+command = "bold underline"
+```
+
+### Color depth
+
+Themes are authored in 24-bit truecolor and **downsampled on the way out**:
+Chameleon reads `COLORTERM`/`TERM` and degrades to the 256-color cube or the 16
+ANSI colors when the terminal can't do better — so a theme looks right everywhere
+without you maintaining per-depth palettes. `chameleon doctor` shows the detected depth.
+
 ### Where themes come from
 
 Chameleon resolves the theme in this order — the **first** source that exists wins:
@@ -191,11 +243,13 @@ Four pieces, deliberately small:
 ```
 🦎 chameleon
 ├── style/      our OWN styling layer — zero Charm, zero framework
-│               Color · Renderer (TTY/NO_COLOR) · Width · PadRight
-├── theme/      loads themes/<name>.toml and resolves hex → Color
-├── adapters/   one renderer per tool — git status, npm outdated
-└── main.go     dispatcher: first adapter whose Handles() matches wins;
-                otherwise, run the command raw
+│               Color · Renderer (TTY/profile) · Width · PadRight · truecolor→256/16
+├── theme/      loads themes/<name>.toml, resolves hex → Color, parses [styles]
+├── adapters/   one renderer per tool, over two shared renderers:
+│               outdated.go (severity ramp) · stateblock.go (worst-first states)
+├── commands.go chameleon's own subcommands: themes · init · doctor · version
+└── main.go     dispatcher: subcommands first, then the first adapter whose
+                Handles() matches; otherwise run the command raw
 ```
 
 The `style` layer is the **core competency**, which is why it depends on no
@@ -214,10 +268,36 @@ func PadRight(s string, width int) string                // alignment
 
 ### Adapters today
 
+**git** — the non-diff surface:
+
 | Command | Captures | States (glyph · color from theme) |
 |---|---|---|
-| `git status` | `git status --porcelain=v2 --branch` | added · deleted · modified · renamed · copied · typechange · untracked |
-| `npm outdated` | `npm outdated --json` | major · minor · patch · update (by upgrade severity) |
+| `git status` | `git status --porcelain=v2 --branch` | added · deleted · modified · renamed · copied · typechange · untracked · **conflict** |
+
+`chameleon git status --compact` collapses it to one prompt-sized line
+(`⎇ main ↑2 ↓1  ✚3  ●1  ?2`) for a shell prompt or tmux.
+
+**The package-manager family** — one shared severity ramp (major · minor · patch
+· update), so they're indistinguishable apart from the command line:
+
+| Command | Captures |
+|---|---|
+| `npm outdated` | `npm outdated --json` |
+| `pip list --outdated` | `pip list --outdated --format json` |
+| `cargo outdated` | `cargo outdated --format json` |
+| `brew outdated` | `brew outdated --json=v2` |
+| `go list -m -u` | `go list -m -u -json all` |
+| `gem outdated` | `gem outdated` (line-parsed) |
+
+**The state-list family** — one shared worst-first layout (failing states float to
+the top), colored by an ok · warn · bad bucket:
+
+| Command | Captures |
+|---|---|
+| `kubectl get pods` | `kubectl get pods -o json` (surfaces CrashLoopBackOff, …) |
+| `docker ps` | `docker ps --format '{{json .}}'` |
+| `gh run list` | `gh run list --json …` (CI conclusion / status) |
+| `systemctl list-units` | `systemctl list-units --output=json` |
 
 To add a tool, implement the contract and register it:
 
@@ -241,8 +321,15 @@ dependency; the Chameleon binary imports no Charm package.
 
 ```sh
 go build -o chameleon .
-vhs demo/family.tape        # → demo/family.gif
+vhs demo/showcase.tape      # → demo/showcase.gif  (the four-tool hero)
+vhs demo/family.tape        # → demo/family.gif    (the focused two-tool cut)
 ```
+
+The recording is **hermetic**: `git` runs for real, while `npm`, `docker` and
+`kubectl` are stood in by the committed stubs in
+[`demo/fixtures/`](demo/fixtures/) — so it needs no network, daemon or cluster.
+Only the *upstream machine output* is fixed; everything Chameleon draws from it
+is the real renderer.
 
 ---
 
@@ -251,9 +338,12 @@ vhs demo/family.tape        # → demo/family.gif
 Out of scope for now, in rough order of interest:
 
 - [x] Embedded built-in theme + `.chameleon.toml` / `~/.config` override layers
-- [ ] More adapters: `docker`, `kubectl`, `cargo`, … (all on the single theme)
+- [x] More adapters: package managers (`pip`/`cargo`/`brew`/`go`/`gem`) and state
+      lists (`docker`/`kubectl`/`gh`/`systemctl`) — all on the single theme
+- [x] Truecolor → 256/16 color downsampling
+- [x] Six embedded themes + `chameleon themes` swatch preview + `[styles]` attributes
+- [x] Shell integration (`chameleon init`) and `chameleon doctor`
 - [ ] `grc`-style regex fallback for commands without an adapter
-- [ ] Truecolor → 256/16 color downsampling
 - [ ] CJK/emoji width via `go-runewidth` (swap point already marked in `style.Width`)
 
 **Explicitly out of scope:** diffs — that's

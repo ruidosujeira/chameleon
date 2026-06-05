@@ -1,0 +1,60 @@
+name = "gruvbox"
+
+# Gruvbox dark.
+[colors]
+prompt = "#b8bb26"
+command = "#ebdbb2"
+branch = "#d3869b"
+ahead = "#fabd2f"
+behind = "#fb4934"
+staged = "#b8bb26"
+modified = "#fabd2f"
+untracked = "#928374"
+path = "#83a598"
+dim = "#928374"
+# per-state colors
+added = "#b8bb26"
+deleted = "#fb4934"
+renamed = "#8ec07c"
+copied = "#8ec07c"
+typechange = "#fe8019"
+conflict = "#fb4934"
+# npm outdated severity ramp
+major = "#fb4934"
+minor = "#fabd2f"
+patch = "#8ec07c"
+update = "#d3869b"
+# state-list buckets
+ok = "#b8bb26"
+warn = "#fabd2f"
+bad = "#fb4934"
+unknown = "#928374"
+
+[glyphs]
+prompt = "❯"
+branch = "⎇"
+ahead = "↑"
+behind = "↓"
+staged = "✓"
+modified = "●"
+added = "✚"
+deleted = "✗"
+renamed = "»"
+copied = "⊕"
+typechange = "~"
+changed = "•"
+untracked = "?"
+clean = "✓"
+conflict = "≠"
+major = "▲"
+minor = "◆"
+patch = "▪"
+update = "↑"
+ok = "●"
+warn = "◐"
+bad = "✗"
+unknown = "○"
+
+[layout]
+indent = "  "
+label_width = 10

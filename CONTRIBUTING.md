@@ -76,6 +76,22 @@ paint. Both existing adapters do this — copy the pattern.
 
 ---
 
+## The fast path: plug into a shared renderer
+
+Most new tools fit one of two existing shapes — reuse the renderer and your
+adapter is just a normalizer (capture + map JSON → a small struct):
+
+- **Something is out of date** (a package manager): build `[]adapters.Upgrade`
+  and call `renderUpgrades("<cmd>", ups, t, r)`. Severity (major/minor/patch) and
+  all the column/alignment work are done for you. See `pipoutdated.go` — ~40 lines.
+- **A list of things in a state** (pods, containers, CI runs, services): build
+  `[]stateItem{state, name, detail}` and call `renderStates("<cmd>", emptyMsg,
+  items, t, r)`. States are bucketed into ok/warn/bad and sorted worst-first. See
+  `dockerps.go`.
+
+Reach for the from-scratch steps below only when your tool's shape is genuinely
+new (like `git status`'s grouped blocks).
+
 ## Add an adapter, step by step
 
 ### 0. The contract

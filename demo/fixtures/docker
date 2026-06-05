@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Demo fixture — stands in for `docker` so the demo needs no running daemon.
+# Chameleon calls
+#   docker ps --format '{{json .}}'
+# which emits newline-delimited JSON, one container per line. Worst-first
+# ordering (exited/restarting float above running) is Chameleon's doing.
+if [ "$1" = "ps" ]; then
+  cat <<'JSON'
+{"Names":"worker","State":"exited","Status":"Exited (1) 4 minutes ago","Image":"acme/worker:1.4.2"}
+{"Names":"cache","State":"restarting","Status":"Restarting (1) 5 seconds ago","Image":"redis:7"}
+{"Names":"api","State":"running","Status":"Up 2 hours","Image":"acme/api:1.4.2"}
+{"Names":"postgres","State":"running","Status":"Up 3 days (healthy)","Image":"postgres:16"}
+JSON
+  exit 0
+fi
+exit 0

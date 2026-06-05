@@ -6,7 +6,6 @@
 package style
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -37,10 +36,14 @@ func Hex(s string) Color {
 	}
 }
 
-// Renderer decides whether color is emitted at all. Build it with New so the
-// TTY/env detection runs once.
+// Renderer decides whether color is emitted at all, and at what depth. Build it
+// with New so the TTY/env detection runs once.
 type Renderer struct {
+	// Enabled is the master switch: when false, Paint returns text untouched.
 	Enabled bool
+	// Profile is the color depth. Its zero value is TrueColor, so a bare
+	// Renderer{Enabled: true} renders 24-bit (what themes are authored in).
+	Profile Profile
 }
 
 // New constructs a Renderer with color enabled according to the rules:
@@ -49,10 +52,13 @@ type Renderer struct {
 //   - otherwise color is on only when stdout is a character device (a real
 //     terminal), not a pipe or file.
 //
+// The color depth is detected from COLORTERM/TERM (see detectProfile) so a
+// truecolor theme degrades gracefully on 256- and 16-color terminals.
+//
 // We intentionally avoid any TTY library: os.Stdout.Stat() + os.ModeCharDevice
 // is all that's needed.
 func New() *Renderer {
-	return &Renderer{Enabled: colorEnabled()}
+	return &Renderer{Enabled: colorEnabled(), Profile: detectProfile()}
 }
 
 func colorEnabled() bool {
@@ -69,14 +75,54 @@ func colorEnabled() bool {
 	return info.Mode()&os.ModeCharDevice != 0
 }
 
-// Paint wraps text in a truecolor SGR sequence and resets afterwards. When the
-// renderer is disabled it returns the text untouched, so output stays clean in
-// pipes and under NO_COLOR.
+// Paint wraps text in a foreground-color SGR sequence (at the renderer's color
+// depth) and resets afterwards. When the renderer is disabled it returns the
+// text untouched, so output stays clean in pipes and under NO_COLOR.
 func (r *Renderer) Paint(c Color, text string) string {
 	if !r.Enabled {
 		return text
 	}
-	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm%s\x1b[0m", c.R, c.G, c.B, text)
+	return "\x1b[" + r.fgParams(c) + "m" + text + "\x1b[0m"
+}
+
+// Style is a foreground color plus text attributes. It lets a theme say "the
+// branch is bold" or "the path is dim" without every adapter call site changing.
+type Style struct {
+	FG        Color
+	HasFG     bool // when false, only the attributes are applied (color untouched)
+	Bold      bool
+	Dim       bool
+	Italic    bool
+	Underline bool
+}
+
+// PaintStyle wraps text in the SGR sequence for s (attributes + optional
+// foreground) and resets afterwards. A disabled renderer, or a Style with
+// nothing set, returns the text untouched.
+func (r *Renderer) PaintStyle(s Style, text string) string {
+	if !r.Enabled {
+		return text
+	}
+	var params []string
+	if s.Bold {
+		params = append(params, "1")
+	}
+	if s.Dim {
+		params = append(params, "2")
+	}
+	if s.Italic {
+		params = append(params, "3")
+	}
+	if s.Underline {
+		params = append(params, "4")
+	}
+	if s.HasFG {
+		params = append(params, r.fgParams(s.FG))
+	}
+	if len(params) == 0 {
+		return text
+	}
+	return "\x1b[" + strings.Join(params, ";") + "m" + text + "\x1b[0m"
 }
 
 // Width returns the display width of s in terminal columns.

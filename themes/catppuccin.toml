@@ -1,0 +1,60 @@
+name = "catppuccin"
+
+# Catppuccin Mocha.
+[colors]
+prompt = "#a6e3a1"
+command = "#cdd6f4"
+branch = "#cba6f7"
+ahead = "#f9e2af"
+behind = "#f38ba8"
+staged = "#a6e3a1"
+modified = "#fab387"
+untracked = "#6c7086"
+path = "#89b4fa"
+dim = "#6c7086"
+# per-state colors
+added = "#a6e3a1"
+deleted = "#f38ba8"
+renamed = "#89dceb"
+copied = "#89dceb"
+typechange = "#fab387"
+conflict = "#f38ba8"
+# npm outdated severity ramp
+major = "#f38ba8"
+minor = "#fab387"
+patch = "#89dceb"
+update = "#cba6f7"
+# state-list buckets
+ok = "#a6e3a1"
+warn = "#f9e2af"
+bad = "#f38ba8"
+unknown = "#6c7086"
+
+[glyphs]
+prompt = "❯"
+branch = "⎇"
+ahead = "↑"
+behind = "↓"
+staged = "✓"
+modified = "●"
+added = "✚"
+deleted = "✗"
+renamed = "»"
+copied = "⊕"
+typechange = "~"
+changed = "•"
+untracked = "?"
+clean = "✓"
+conflict = "≠"
+major = "▲"
+minor = "◆"
+patch = "▪"
+update = "↑"
+ok = "●"
+warn = "◐"
+bad = "✗"
+unknown = "○"
+
+[layout]
+indent = "  "
+label_width = 10

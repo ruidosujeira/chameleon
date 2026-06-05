@@ -59,7 +59,7 @@ func TestParseSemver(t *testing.T) {
 		{"10.0.0", [3]int{10, 0, 0}, true},
 		{"1.2.3-beta", [3]int{}, false},
 		{"1.2.3.4", [3]int{}, false},
-		{"v1.2.3", [3]int{}, false},
+		{"v1.2.3", [3]int{1, 2, 3}, true}, // leading 'v' (Go modules) tolerated
 		{"", [3]int{}, false},
 	}
 	for _, c := range cases {

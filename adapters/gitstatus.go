@@ -31,14 +31,34 @@ type entry struct {
 	path string
 }
 
-// Render shells out to porcelain v2 and rebuilds the output from the parsed
-// machine form.
+// Render captures `git status` porcelain v2 and rebuilds the output. Capture
+// (exec) and render (pure) are kept in separate functions so renderStatus can
+// be table-tested offline against fixtures with no git installed.
 func (GitStatus) Render(argv []string, t *theme.Theme, r *style.Renderer) (string, error) {
+	out, err := captureStatus()
+	if err != nil {
+		return "", err
+	}
+	// `chameleon git status --compact` collapses everything to one prompt-sized
+	// line (branch + ahead/behind + per-group counts) — handy in a shell prompt
+	// or tmux. The flag is consumed here; capture always uses porcelain v2.
+	return renderStatus(out, hasFlag(argv, "--compact"), t, r)
+}
+
+// captureStatus shells out to porcelain v2 and returns its raw stdout. This is
+// the only impure part of the adapter.
+func captureStatus() ([]byte, error) {
 	out, err := exec.Command("git", "status", "--porcelain=v2", "--branch").Output()
 	if err != nil {
-		return "", fmt.Errorf("git status: %w", err)
+		return nil, fmt.Errorf("git status: %w", err)
 	}
+	return out, nil
+}
 
+// renderStatus parses porcelain v2 (with --branch headers) and rebuilds the
+// styled output. It is pure (no exec) so it can be table-tested against golden
+// fixtures with the renderer disabled.
+func renderStatus(out []byte, compact bool, t *theme.Theme, r *style.Renderer) (string, error) {
 	var (
 		branch    string
 		upstream  string
@@ -47,6 +67,7 @@ func (GitStatus) Render(argv []string, t *theme.Theme, r *style.Renderer) (strin
 		staged    []entry
 		worktree  []entry
 		untracked []entry
+		conflicts []entry
 	)
 
 	sc := bufio.NewScanner(strings.NewReader(string(out)))
@@ -92,6 +113,14 @@ func (GitStatus) Render(argv []string, t *theme.Theme, r *style.Renderer) (strin
 				path = path[:i] // keep the new name, drop the original
 			}
 			classify(f[1], path, &staged, &worktree)
+		case 'u':
+			// Unmerged: "u <XY> <sub> <m1> <m2> <m3> <mW> <h1> <h2> <h3> <path>".
+			// Any XY here is a merge conflict; we collapse the conflict-type
+			// variations (UU/AA/DD/AU/UA/DU/UD) into one "conflict" state.
+			f := strings.SplitN(line, " ", 11)
+			if len(f) == 11 {
+				conflicts = append(conflicts, entry{code: "conflict", path: f[10]})
+			}
 		case '?':
 			// Untracked: "? <path>".
 			f := strings.SplitN(line, " ", 2)
@@ -104,7 +133,10 @@ func (GitStatus) Render(argv []string, t *theme.Theme, r *style.Renderer) (strin
 		return "", fmt.Errorf("scan git status: %w", err)
 	}
 
-	return draw(t, r, branch, upstream, ahead, behind, staged, worktree, untracked), nil
+	if compact {
+		return drawCompact(t, r, branch, ahead, behind, staged, worktree, untracked, conflicts), nil
+	}
+	return draw(t, r, branch, upstream, ahead, behind, conflicts, staged, worktree, untracked), nil
 }
 
 // mapCode turns a porcelain v2 status char into a theme glyph/label key. '.'
@@ -145,48 +177,86 @@ func classify(xy, path string, staged, worktree *[]entry) {
 func draw(
 	t *theme.Theme, r *style.Renderer,
 	branch, upstream string, ahead, behind int,
-	staged, worktree, untracked []entry,
+	conflicts, staged, worktree, untracked []entry,
 ) string {
 	var sb strings.Builder
 
 	// Command line: prompt glyph + the command.
-	sb.WriteString(r.Paint(t.Colors["prompt"], t.Glyphs["prompt"]))
+	sb.WriteString(styled(t, r, "prompt", t.Glyphs["prompt"]))
 	sb.WriteString(" ")
-	sb.WriteString(r.Paint(t.Colors["command"], "git status"))
+	sb.WriteString(styled(t, r, "command", "git status"))
 	sb.WriteString("\n")
 
 	// Branch line: branch glyph + name, then ahead/behind, then upstream dim.
 	sb.WriteString(t.Layout.Indent)
-	sb.WriteString(r.Paint(t.Colors["branch"], t.Glyphs["branch"]+" "+branch))
+	sb.WriteString(styled(t, r, "branch", t.Glyphs["branch"]+" "+branch))
 	if ahead > 0 {
 		sb.WriteString(" ")
-		sb.WriteString(r.Paint(t.Colors["ahead"], fmt.Sprintf("%s%d", t.Glyphs["ahead"], ahead)))
+		sb.WriteString(styled(t, r, "ahead", fmt.Sprintf("%s%d", t.Glyphs["ahead"], ahead)))
 	}
 	if behind > 0 {
 		sb.WriteString(" ")
-		sb.WriteString(r.Paint(t.Colors["behind"], fmt.Sprintf("%s%d", t.Glyphs["behind"], behind)))
+		sb.WriteString(styled(t, r, "behind", fmt.Sprintf("%s%d", t.Glyphs["behind"], behind)))
 	}
 	if upstream != "" {
 		sb.WriteString(" ")
-		sb.WriteString(r.Paint(t.Colors["dim"], upstream))
+		sb.WriteString(styled(t, r, "dim", upstream))
 	}
 	sb.WriteString("\n")
 
 	// Nothing changed → a single clean line and we're done.
-	if len(staged) == 0 && len(worktree) == 0 && len(untracked) == 0 {
+	if len(conflicts) == 0 && len(staged) == 0 && len(worktree) == 0 && len(untracked) == 0 {
 		sb.WriteString(t.Layout.Indent)
-		sb.WriteString(r.Paint(t.Colors["staged"], t.Glyphs["clean"]+" tudo limpo"))
+		sb.WriteString(styled(t, r, "staged", t.Glyphs["clean"]+" tudo limpo"))
 		sb.WriteString("\n")
 		return sb.String()
 	}
 
-	// Three grouped blocks. Layout groups by stage, but COLOR is per state
-	// (added green, deleted red, modified orange…) so add and delete never
-	// look alike just because both are staged.
+	// Grouped blocks. Layout groups by stage, but COLOR is per state (added
+	// green, deleted red, modified orange…) so add and delete never look alike
+	// just because both are staged. Conflicts come first — they block the most.
+	writeBlock(&sb, t, r, conflicts)
 	writeBlock(&sb, t, r, staged)
 	writeBlock(&sb, t, r, worktree)
 	writeBlock(&sb, t, r, untracked)
 
+	return sb.String()
+}
+
+// drawCompact renders the one-line summary for `--compact`: branch, ahead/behind,
+// then a count per non-empty group, each in its own state color. A clean tree
+// collapses to "<branch> ✓". Designed to sit inside a shell prompt or tmux.
+func drawCompact(
+	t *theme.Theme, r *style.Renderer,
+	branch string, ahead, behind int,
+	staged, worktree, untracked, conflicts []entry,
+) string {
+	var sb strings.Builder
+	sb.WriteString(styled(t, r, "branch", t.Glyphs["branch"]+" "+branch))
+	if ahead > 0 {
+		sb.WriteString(" " + styled(t, r, "ahead", fmt.Sprintf("%s%d", t.Glyphs["ahead"], ahead)))
+	}
+	if behind > 0 {
+		sb.WriteString(" " + styled(t, r, "behind", fmt.Sprintf("%s%d", t.Glyphs["behind"], behind)))
+	}
+
+	// Per-group counts, reusing existing per-state glyphs and colors so compact
+	// stays in the same visual language as the full view.
+	count := func(code string, n int) {
+		if n == 0 {
+			return
+		}
+		sb.WriteString("  " + r.Paint(codeColor(t, code), fmt.Sprintf("%s%d", t.Glyphs[code], n)))
+	}
+	count("conflict", len(conflicts))
+	count("added", len(staged))
+	count("modified", len(worktree))
+	count("untracked", len(untracked))
+
+	if len(conflicts)+len(staged)+len(worktree)+len(untracked) == 0 && ahead == 0 && behind == 0 {
+		sb.WriteString(" " + styled(t, r, "staged", t.Glyphs["clean"]))
+	}
+	sb.WriteString("\n")
 	return sb.String()
 }
 
@@ -202,6 +272,8 @@ func codeColor(t *theme.Theme, code string) style.Color {
 		return t.Colors["modified"]
 	case "untracked":
 		return t.Colors["untracked"]
+	case "conflict":
+		return t.Colors["behind"]
 	default:
 		return t.Colors["staged"]
 	}
@@ -221,7 +293,7 @@ func writeBlock(sb *strings.Builder, t *theme.Theme, r *style.Renderer, entries 
 		sb.WriteString(t.Layout.Indent)
 		sb.WriteString(left)
 		sb.WriteString(" ")
-		sb.WriteString(r.Paint(t.Colors["path"], e.path))
+		sb.WriteString(styled(t, r, "path", e.path))
 		sb.WriteString("\n")
 	}
 }

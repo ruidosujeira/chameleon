@@ -17,11 +17,17 @@ deleted = "#f7768e"
 renamed = "#7dcfff"
 copied = "#7dcfff"
 typechange = "#e0af68"
+conflict = "#f7768e"
 # npm outdated: severity ramp (major most urgent → patch least)
 major = "#f7768e"
 minor = "#e0af68"
 patch = "#7dcfff"
 update = "#bb9af7"
+# state-list buckets (kubectl/docker/gh/systemctl): ok / warn / bad / unknown
+ok = "#9ece6a"
+warn = "#e0af68"
+bad = "#f7768e"
+unknown = "#565f89"
 
 [glyphs]
 prompt = "❯"
@@ -38,6 +44,7 @@ typechange = "~"
 changed = "•"
 untracked = "?"
 clean = "✓"
+conflict = "≠"
 # npm outdated severity glyphs — distinct shapes per level so each reads at a
 # glance (▲ triangle / ◆ diamond / ▪ square), not size/fill variations that
 # blur together in most terminal fonts.
@@ -45,6 +52,14 @@ major = "▲"
 minor = "◆"
 patch = "▪"
 update = "↑"
+# state-list severity buckets — filled / half / cross / hollow.
+ok = "●"
+warn = "◐"
+bad = "✗"
+unknown = "○"
+
+# [styles] is optional: give any key text attributes (bold/dim/italic/underline),
+# e.g. branch = "bold" or path = "dim". Left empty here to match the demo's look.
 
 [layout]
 indent = "  "

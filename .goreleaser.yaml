@@ -1,0 +1,52 @@
+# GoReleaser config — cross-platform binaries on every `vX.Y.Z` tag.
+#   Local dry run:  goreleaser release --snapshot --clean
+# See .github/workflows/release.yml for the CI trigger.
+version: 2
+
+project_name: chameleon
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0 # static binaries; the only dep is the pure-Go TOML parser
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    # Stamp the version reported by `chameleon version` / `doctor`.
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    # The default theme is embedded in the binary; the themes/ dir ships only as
+    # a reference for users writing their own.
+    files:
+      - README.md
+      - LICENSE
+      - themes/*.toml
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+# To publish a Homebrew formula, create a `ruidosujeira/homebrew-tap` repo and
+# uncomment this (goreleaser needs a token with write access to that repo):
+#
+# brews:
+#   - repository: { owner: ruidosujeira, name: homebrew-tap }
+#     homepage: "https://github.com/ruidosujeira/chameleon"
+#     description: "A semantic reformatter for terminal output"
+#     license: MIT

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Demo fixture — stands in for `kubectl` so the demo needs no cluster.
+# Chameleon calls
+#   kubectl get pods -o json
+# and surfaces a container's waiting reason (CrashLoopBackOff) over its phase,
+# floating the unhealthy pod to the top. All rendering is real Chameleon.
+if [ "$1" = "get" ]; then
+  cat <<'JSON'
+{
+  "items": [
+    {"metadata": {"name": "api-7d9f6"},
+     "status": {"phase": "Running",
+       "containerStatuses": [{"ready": true, "restartCount": 0, "state": {"running": {}}}]}},
+    {"metadata": {"name": "web-1a2b3"},
+     "status": {"phase": "Running",
+       "containerStatuses": [{"ready": true, "restartCount": 0, "state": {"running": {}}}]}},
+    {"metadata": {"name": "worker-5c8d"},
+     "status": {"phase": "Running",
+       "containerStatuses": [{"ready": false, "restartCount": 7, "state": {"waiting": {"reason": "CrashLoopBackOff"}}}]}},
+    {"metadata": {"name": "migrate-xz9"},
+     "status": {"phase": "Pending",
+       "containerStatuses": [{"ready": false, "restartCount": 0, "state": {"waiting": {"reason": "ContainerCreating"}}}]}}
+  ]
+}
+JSON
+  exit 0
+fi
+exit 0

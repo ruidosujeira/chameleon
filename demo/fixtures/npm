@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Demo fixture — stands in for `npm` so demo/showcase.tape records the same way
+# every time, with no network and no node_modules. Chameleon calls
+#   npm outdated --json
+# and re-renders from the JSON below. What you see in the GIF is 100% real
+# Chameleon output; only this upstream payload is fixed so the demo is hermetic.
+if [ "$1" = "outdated" ]; then
+  cat <<'JSON'
+{
+  "chalk":   {"current": "4.0.0",   "wanted": "4.1.2",   "latest": "5.6.2"},
+  "express": {"current": "4.18.2",  "wanted": "4.21.2",  "latest": "5.1.0"},
+  "semver":  {"current": "7.3.0",   "wanted": "7.8.1",   "latest": "7.8.1"},
+  "lodash":  {"current": "4.17.20", "wanted": "4.17.21", "latest": "4.17.21"}
+}
+JSON
+  # Real `npm outdated` exits 1 when it finds outdated packages; Chameleon
+  # treats that "useful non-zero exit" as success, so mirror it here.
+  exit 1
+fi
+exit 0

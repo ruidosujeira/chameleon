@@ -21,6 +21,13 @@ jobs:
           go-version-file: go.mod   # track the version pinned in go.mod
           cache: true
 
+      - name: Format check
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-clean:"; echo "$unformatted"; exit 1
+          fi
+
       - name: Build
         run: go build ./...
 

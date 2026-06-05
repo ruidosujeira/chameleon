@@ -1,0 +1,60 @@
+name = "solarized"
+
+# Solarized dark.
+[colors]
+prompt = "#859900"
+command = "#839496"
+branch = "#6c71c4"
+ahead = "#b58900"
+behind = "#dc322f"
+staged = "#859900"
+modified = "#b58900"
+untracked = "#586e75"
+path = "#268bd2"
+dim = "#586e75"
+# per-state colors
+added = "#859900"
+deleted = "#dc322f"
+renamed = "#2aa198"
+copied = "#2aa198"
+typechange = "#cb4b16"
+conflict = "#dc322f"
+# npm outdated severity ramp
+major = "#dc322f"
+minor = "#cb4b16"
+patch = "#2aa198"
+update = "#6c71c4"
+# state-list buckets
+ok = "#859900"
+warn = "#b58900"
+bad = "#dc322f"
+unknown = "#586e75"
+
+[glyphs]
+prompt = "❯"
+branch = "⎇"
+ahead = "↑"
+behind = "↓"
+staged = "✓"
+modified = "●"
+added = "✚"
+deleted = "✗"
+renamed = "»"
+copied = "⊕"
+typechange = "~"
+changed = "•"
+untracked = "?"
+clean = "✓"
+conflict = "≠"
+major = "▲"
+minor = "◆"
+patch = "▪"
+update = "↑"
+ok = "●"
+warn = "◐"
+bad = "✗"
+unknown = "○"
+
+[layout]
+indent = "  "
+label_width = 10
